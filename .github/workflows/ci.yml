@@ -27,3 +27,15 @@ jobs:
       - name: Validacao simples
         run: |
           echo "CI rodando com sucesso"
+
+          - name: Valida estrutura da pasta pipeline (mínimo 5 pastas)
+          run: |
+            test -d pipeline || { echo "Pasta pipeline não encontrada"; exit 1; }
+            QTD=$(find pipeline -mindepth 1 -maxdepth 1 -type d | wc -l)
+            echo "Pastas encontradas: $QTD"
+            if [ "$QTD" -ge 5 ]; then
+              echo "Estrutura OK"
+            else
+              echo "Estrutura inválida: precisa ter pelo menos 5 pastas"
+              exit 1
+            fi
