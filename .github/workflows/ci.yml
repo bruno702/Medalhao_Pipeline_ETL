@@ -12,26 +12,37 @@ jobs:
 
     steps:
       # 1️ Pega o código do repositório
-      - name: Checkout do código
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2️ Mensagem inicial do CI
-      - name: Início do CI
-        run: echo " Iniciando CI do pipeline Medalhao_Pipeline_ETL"
+      # 2️ Configura Python
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
 
-      # 3️ Verifica se a pasta pipeline existe e falha se não existir
-      - name: Verifica pasta pipeline
+      # 3️ Instala dependências
+      - name: Install dependencies
         run: |
-          CAMINHO="pipeline"
-          if [ -d "$CAMINHO" ]; then
-            echo " Pasta pipeline encontrada em $CAMINHO"
+          python -m pip install --upgrade pip
+          pip install jupyter papermill pandas numpy
+
+      # 4️ Mensagem inicial do CI
+      - name: Start CI
+        run: echo "Starting CI for Medalhao Pipeline ETL"
+
+      # 5️ Verifica pasta pipeline
+      - name: Verify pipeline folder
+        run: |
+          if [ -d "pipeline" ]; then
+            echo "Pipeline folder exists."
           else
-            echo " Pasta pipeline NÃO encontrada em $CAMINHO"
-            exit 1  # Falha o CI
+            echo "Pipeline folder NOT found!"
+            exit 1
           fi
 
-      # 4️ Verifica todos os notebooks e falha se algum estiver faltando
-      - name: Verifica notebooks
+      # 6️ Verifica todos os notebooks
+      - name: Verify notebooks
         run: |
           NOTEBOOKS=(
             "01_orquestrador/00_orquestrador.ipynb"
@@ -42,23 +53,33 @@ jobs:
             "05_qualidade/05_qualidade_e_alertas.ipynb"
           )
 
-          ERRO=0
-
+          MISSING=()
           for nb in "${NOTEBOOKS[@]}"; do
-            if [ -f "pipeline/$nb" ]; then
-              echo " Notebook encontrado: $nb"
-            else
-              echo " Notebook NÃO encontrado: $nb"
-              ERRO=1
+            if [ ! -f "pipeline/$nb" ]; then
+              MISSING+=("$nb")
             fi
           done
 
-          # Se algum notebook estiver faltando, falha o CI
-          if [ "$ERRO" -eq 1 ]; then
-            echo " Falha: pelo menos um notebook está faltando."
+          if [ ${#MISSING[@]} -ne 0 ]; then
+            echo "Missing notebooks:"
+            printf '%s\n' "${MISSING[@]}"
             exit 1
+          else
+            echo "All notebooks found!"
           fi
 
-      # 5️ Mensagem de finalização
-      - name: CI finalizado
-        run: echo " CI do pipeline finalizado com sucesso"
+      # 7️ Cria pasta de saída para notebooks executados
+      - name: Create output folder
+        run: mkdir -p output
+
+      # 8️ Executa todos os notebooks
+      - name: Execute notebooks
+        run: |
+          for nb in "${NOTEBOOKS[@]}"; do
+            echo "Running notebook: $nb"
+            papermill "pipeline/$nb" "output/$(basename $nb)"
+          done
+
+      # 9️⃣ Mensagem final do CI
+      - name: CI finished
+        run: echo "CI completed successfully"
