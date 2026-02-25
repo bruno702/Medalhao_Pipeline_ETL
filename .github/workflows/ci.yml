@@ -1,4 +1,4 @@
-name: CI - Projeto Medalhao
+name: CI/ Medalhao_Pipeline_ETL
 
 on:
   push:
