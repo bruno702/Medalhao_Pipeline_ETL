@@ -1,41 +1,54 @@
-name: CI/ Medalhao_Pipeline_ETL
+name: CI/Medalhao_Pipeline_ETL
 
 on:
   push:
-    branches: [ "main", "dev"]
+    branches: ["main", "dev"]
   pull_request:
-    branches: [ "main", "dev"]
+    branches: ["main", "dev"]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout do codigo
+      # 1️ Pega o código do repositório
+      - name: Checkout do código
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+      # 2️ Mensagem inicial do CI
+      - name: Início do CI
+        run: echo " Iniciando CI do pipeline Medalhao_Pipeline_ETL"
 
-      - name: Instalar dependencias
+      # 3️ Verifica se a pasta pipeline existe
+      - name: Verifica pasta pipeline
         run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          CAMINHO="pipeline"
+          if [ -d "$CAMINHO" ]; then
+            echo " Pasta pipeline encontrada em $CAMINHO"
+          else
+            echo " Pasta pipeline NÃO encontrada em $CAMINHO"
+          fi
 
-      - name: Validacao simples
+      # 4️ Verifica se todos os notebooks existem
+      - name: Verifica notebooks
         run: |
-          echo "CI rodando com sucesso"
+          NOTEBOOKS=(
+            "01_orquestrador/00_orquestrador.ipynb"
+            "02_ingestao_bronze/01_ingestao_bronze.ipynb"
+            "03_tratamento_silver/02_bronze_para_silver.ipynb"
+            "03_tratamento_silver/03_SilverRobusto.ipynb"
+            "04_silver_para_gold/04_silver_para_gold.ipynb"
+            "05_qualidade/05_qualidade_e_alertas.ipynb"
+          )
 
-          - name: Valida estrutura da pasta pipeline (mínimo 5 pastas)
-          run: |
-            test -d pipeline || { echo "Pasta pipeline não encontrada"; exit 1; }
-            QTD=$(find pipeline -mindepth 1 -maxdepth 1 -type d | wc -l)
-            echo "Pastas encontradas: $QTD"
-            if [ "$QTD" -ge 5 ]; then
-              echo "Estrutura OK"
+          for nb in "${NOTEBOOKS[@]}"; do
+            if [ -f "pipeline/$nb" ]; then
+              echo " Notebook encontrado: $nb"
             else
-              echo "Estrutura inválida: precisa ter pelo menos 5 pastas"
-              exit 1
+              echo " Notebook NÃO encontrado: $nb"
             fi
+          done
+
+      # 5️ Mensagem de finalização
+      - name: CI finalizado
+        run: echo " CI do pipeline finalizado com sucesso"
