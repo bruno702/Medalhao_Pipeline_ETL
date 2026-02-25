@@ -11,6 +11,7 @@ Concluí recentemente um pipeline completo no **Databricks**, desenvolvido em **
 O projeto combina **orquestração, tratamento de dados e monitoramento de qualidade**, mostrando habilidades práticas de ETL e engenharia de dados.
 
 ---
+"CI com GitHub Actions validando e executando todos os notebooks do pipeline Medalhão ETL. Inclui verificação de arquivos, execução automática via Papermill, gestão de dependências e upload de artifacts."
 
 ## Bronze (Ingestão Cruda)
 
