@@ -1,3 +1,12 @@
+<<<<<<< HEAD
+=======
+# Medalhão Pipeline ETL
+
+[![CI](https://github.com/bruno702/Medalhao_Pipeline_ETL/actions/workflows/ci.yml/badge.svg)](https://github.com/bruno702/Medalhao_Pipeline_ETL/actions/workflows/ci.yml)
+
+Pipeline completo no **Databricks** com PySpark para transformar dados brutos em informações limpas e prontas para análise.
+
+>>>>>>> 9414bc3 (Update README.md)
 # Projeto Databricks: Pipeline de Dados End-to-End com PySpark
 
 Concluí recentemente um pipeline completo no **Databricks**, desenvolvido em **PySpark**, que transforma dados brutos em informações limpas, consistentes e prontas para análise.  
