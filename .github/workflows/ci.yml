@@ -11,27 +11,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️ Pega o código do repositório
+      #  Pega o código do repositório
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2️ Configura Python
+      #  Configura Python
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: 3.11
 
-      # 3️ Instala dependências
+      #  Instala dependências
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install jupyter papermill pandas numpy
 
-      # 4️ Mensagem inicial do CI
+      #  Mensagem inicial do CI
       - name: Start CI
         run: echo "Starting CI for Medalhao Pipeline ETL"
 
-      # 5️ Verifica pasta pipeline
+      #  Verifica pasta pipeline
       - name: Verify pipeline folder
         run: |
           if [ -d "pipeline" ]; then
@@ -41,7 +41,7 @@ jobs:
             exit 1
           fi
 
-      # 6️ Verifica todos os notebooks
+      #  Verifica todos os notebooks
       - name: Verify notebooks
         run: |
           NOTEBOOKS=(
@@ -68,11 +68,11 @@ jobs:
             echo "All notebooks found!"
           fi
 
-      # 7️ Cria pasta de saída para notebooks executados
+      #  Cria pasta de saída para notebooks executados
       - name: Create output folder
         run: mkdir -p output
 
-      # 8️ Executa todos os notebooks
+      #  Executa todos os notebooks
       - name: Execute notebooks
         run: |
           for nb in "${NOTEBOOKS[@]}"; do
