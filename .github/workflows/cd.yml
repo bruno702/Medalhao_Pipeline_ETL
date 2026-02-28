@@ -127,7 +127,7 @@ jobs:
 
       # Passo 7: Salvar run_id como artifact
       - name: Upload Run ID artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: databricks-run-id
           path: run_id.txt
