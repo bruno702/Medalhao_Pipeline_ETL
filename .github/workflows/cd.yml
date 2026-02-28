@@ -163,3 +163,8 @@ jobs:
       # -----------------------------
       - name: Success message
         run: echo "CD executado com sucesso! Job do Databricks finalizado com sucesso."
+
+# -----------------------------
+# Pequena alteração para disparar commit
+# -----------------------------
+# Esta linha garante que o Git detecte alteração no arquivo para commit e push
