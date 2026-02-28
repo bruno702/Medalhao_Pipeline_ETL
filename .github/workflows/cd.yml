@@ -18,42 +18,27 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
-      # 2️ Configura Python
+      # 2️ Setup Python
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: 3.11
 
-      # 3️ Instala dependências
+      # 3️ Install dependencies
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install requests
 
-      # 4️ Define input CSV local
-      - name: Define input CSV
+      # 4️ Definir o input_path que será passado ao Job
+      - name: Define input_path
         run: |
-          INPUT_LOCAL="./crypto_sentiment_prediction_dataset.csv"
-          echo "INPUT_LOCAL=$INPUT_LOCAL" >> $GITHUB_ENV
-          echo "Arquivo local definido: $INPUT_LOCAL"
+          # Aqui você coloca o path que quer que o Job use
+          INPUT_PATH="/Volumes/saas_project/core/landing/crypto_sentiment_prediction_dataset.csv"
+          echo "INPUT_PATH=$INPUT_PATH" >> $GITHUB_ENV
+          echo "input_path definido: $INPUT_PATH"
 
-      # 5️ Upload CSV para DBFS
-      - name: Upload CSV to DBFS
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-          INPUT_LOCAL: ${{ env.INPUT_LOCAL }}
-        run: |
-          DBFS_PATH="/tmp/crypto_sentiment_prediction_dataset.csv"
-          echo "Enviando $INPUT_LOCAL para DBFS:$DBFS_PATH"
-          RESPONSE=$(curl -s -X POST \
-            -H "Authorization: Bearer $DATABRICKS_TOKEN" \
-            -F "contents=@${INPUT_LOCAL}" \
-            "${DATABRICKS_HOST}/api/2.1/dbfs/put?path=${DBFS_PATH}&overwrite=true")
-          echo "Resposta do upload: $RESPONSE"
-          echo "INPUT_PATH=dbfs:$DBFS_PATH" >> $GITHUB_ENV
-
-      # 6️ Dispara o Job no Databricks
+      # 5️ Disparar Job no Databricks passando input_path como notebook_param
       - name: Trigger Databricks Job
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
@@ -62,11 +47,18 @@ jobs:
           INPUT_PATH: ${{ env.INPUT_PATH }}
         run: |
           echo "Disparando Job $DATABRICKS_JOB_ID com input_path=$INPUT_PATH"
+
           RESPONSE=$(curl -s -X POST \
             -H "Authorization: Bearer $DATABRICKS_TOKEN" \
             -H "Content-Type: application/json" \
-            -d "{\"job_id\": ${DATABRICKS_JOB_ID}, \"notebook_params\": {\"input_path\": \"${INPUT_PATH}\"}}" \
-            "${DATABRICKS_HOST}/api/2.1/jobs/run-now")
+            -d "{
+                  \"job_id\": $DATABRICKS_JOB_ID,
+                  \"notebook_params\": {
+                      \"input_path\": \"$INPUT_PATH\"
+                  }
+                }" \
+            "$DATABRICKS_HOST/api/2.1/jobs/run-now")
+
           echo "Resposta completa do Job: $RESPONSE"
 
           RUN_ID=$(echo "$RESPONSE" | python -c "import sys, json; print(json.load(sys.stdin).get('run_id', ''))")
@@ -76,16 +68,17 @@ jobs:
           fi
           echo "Run ID: $RUN_ID" > run_id.txt
 
-      # 7️ Espera o Job finalizar e verifica status
+      # 6️ Esperar o Job finalizar e checar status
       - name: Wait for Databricks Job
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
-          STATUS="PENDING"
           MAX_WAIT=600
           ELAPSED=0
+          STATUS="PENDING"
           echo "Aguardando finalização do Job..."
+
           while [ "$STATUS" = "RUNNING" ] || [ "$STATUS" = "PENDING" ]; do
             sleep 10
             ELAPSED=$((ELAPSED + 10))
@@ -94,26 +87,27 @@ jobs:
               exit 1
             fi
             STATUS=$(curl -s -H "Authorization: Bearer $DATABRICKS_TOKEN" \
-              "${DATABRICKS_HOST}/api/2.1/jobs/runs/get?run_id=$(cat run_id.txt)" | \
+              "$DATABRICKS_HOST/api/2.1/jobs/runs/get?run_id=$(cat run_id.txt)" | \
               python -c "import sys, json; print(json.load(sys.stdin)['state']['life_cycle_state'])")
             echo "Status atual: $STATUS"
           done
 
           FINAL_STATUS=$(curl -s -H "Authorization: Bearer $DATABRICKS_TOKEN" \
-            "${DATABRICKS_HOST}/api/2.1/jobs/runs/get?run_id=$(cat run_id.txt)" | \
+            "$DATABRICKS_HOST/api/2.1/jobs/runs/get?run_id=$(cat run_id.txt)" | \
             python -c "import sys, json; print(json.load(sys.stdin)['state'].get('result_state', 'UNKNOWN'))")
           echo "Status final do Job: $FINAL_STATUS"
+
           if [ "$FINAL_STATUS" != "SUCCESS" ]; then
             echo "Erro: Job do Databricks falhou!"
             exit 1
 
-      # 8️ Salva Run ID como artifact
+      #  Salvar Run ID como artifact
       - name: Upload Run ID artifact
         uses: actions/upload-artifact@v3
         with:
           name: databricks-run-id
           path: run_id.txt
 
-      # 9️ Mensagem final
+      # 8️ Mensagem final
       - name: Success message
         run: echo "CD executado com sucesso! Job do Databricks finalizado."
