@@ -2,9 +2,9 @@ name: CI/Medalhao_Pipeline_ETL
 
 on:
   push:
-    branches: ["main", "dev"]
+    branches: ["main"]
   pull_request:
-    branches: ["main", "dev"]
+    branches: ["main"]
 
 jobs:
   build:
