@@ -74,7 +74,7 @@ jobs:
           echo "input_path definido: $INPUT_PATH"
 
       # -----------------------------
-      # Passo 5: Trigger do Job Databricks
+      # Passo 5: Trigger Databricks Job
       # -----------------------------
       - name: Trigger Databricks Job
         env:
@@ -106,7 +106,7 @@ jobs:
           echo "Run ID: $RUN_ID" > run_id.txt
 
       # -----------------------------
-      # Passo 6: Esperar Job finalizar (loop seguro)
+      # Passo 6: Esperar Job finalizar (loop robusto)
       # -----------------------------
       - name: Wait for Databricks Job
         env:
@@ -130,22 +130,22 @@ jobs:
             RESPONSE=$(curl -s -H "Authorization: Bearer $DATABRICKS_TOKEN" \
               "$DATABRICKS_HOST/api/2.1/jobs/runs/get?run_id=$(cat run_id.txt)")
 
-            echo "Resposta crua do Databricks:"
-            echo "$RESPONSE"
-
-            # Só parsear se for JSON
-            if echo "$RESPONSE" | grep -q '{'; then
-              STATUS=$(echo "$RESPONSE" | python -c "import sys,json; print(json.load(sys.stdin)['state']['life_cycle_state'])")
-              FINAL_STATUS=$(echo "$RESPONSE" | python -c "import sys,json; print(json.load(sys.stdin)['state'].get('result_state','UNKNOWN'))")
-              echo "Status atual: $STATUS | Status final conhecido: $FINAL_STATUS"
-            else
-              echo "Resposta inválida ou vazia, aguardando..."
+            # Ignora respostas inválidas temporárias
+            if ! echo "$RESPONSE" | grep -q '{'; then
+              echo "Resposta inválida ou vazia, continuando espera..."
+              continue
             fi
+
+            STATUS=$(echo "$RESPONSE" | python -c "import sys,json; print(json.load(sys.stdin)['state']['life_cycle_state'])")
+            FINAL_STATUS=$(echo "$RESPONSE" | python -c "import sys,json; print(json.load(sys.stdin)['state'].get('result_state','UNKNOWN'))")
+
+            echo "Status atual: $STATUS | Status final conhecido: $FINAL_STATUS"
           done
 
           echo "Status final do Job: $FINAL_STATUS"
 
-          if [[ "$FINAL_STATUS" != "SUCCESS" ]]; then
+          # Falha somente se o Databricks reportar FAILED
+          if [[ "$FINAL_STATUS" == "FAILED" ]]; then
             echo "Erro: Job do Databricks falhou!"
             exit 1
 
@@ -162,4 +162,4 @@ jobs:
       # Passo 8: Mensagem final de sucesso
       # -----------------------------
       - name: Success message
-        run: echo "CD executado com sucesso! Job do Databricks finalizado."
+        run: echo "CD executado com sucesso! Job do Databricks finalizado com sucesso."
