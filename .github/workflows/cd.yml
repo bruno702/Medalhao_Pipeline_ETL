@@ -1,24 +1,20 @@
 name: CD/Medalhao_Pipeline_ETL
 
-# Dispara automaticamente quando o CI termina
+# 🔹 Gatilho confiável: qualquer push em dev ou main
 on:
-  workflow_run:
-    workflows: ["CI/Medalhao_Pipeline_ETL"]
-    types:
-      - completed
+  push:
+    branches:
+      - main
+      - dev
 
 jobs:
   deploy:
-    # Só roda se o CI terminou com sucesso e branch é dev ou main
-    if: ${{ github.event.workflow_run.conclusion == 'success' && (github.event.workflow_run.head_branch == 'dev' || github.event.workflow_run.head_branch == 'main') }}
     runs-on: ubuntu-latest
 
     steps:
-      # 1️ Checkout do código no commit que passou no CI
+      # 1️ Checkout do código
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
 
       # 2️ Setup Python
       - name: Setup Python
@@ -32,7 +28,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests
 
-      # 4️ Define input_path (pode ser ajustado para artefatos do CI futuramente)
+      # 4️ Define input_path (pode ser ajustado para artifact do CI depois)
       - name: Define input_path
         run: |
           INPUT_PATH="/Volumes/saas_project/core/landing/crypto_sentiment_prediction_dataset.csv"
@@ -57,7 +53,6 @@ jobs:
 
           echo "Resposta Databricks: $RESPONSE"
 
-          # Extrai run_id de forma segura
           RUN_ID=$(echo "$RESPONSE" | python -c "import sys, json; print(json.load(sys.stdin).get('run_id', ''))")
           if [ -z "$RUN_ID" ]; then
             echo "Erro: Não foi possível extrair run_id do Databricks. Saindo..."
@@ -65,7 +60,7 @@ jobs:
           fi
           echo "Run ID: $RUN_ID" > run_id.txt
 
-      # 6️ Espera o Job finalizar e verifica resultado
+      # 6️ Espera o Job finalizar
       - name: Wait for Databricks Job
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
@@ -74,7 +69,6 @@ jobs:
           STATUS="PENDING"
           echo "Aguardando finalização do Job no Databricks..."
 
-          # Loop de verificação
           while [ "$STATUS" = "RUNNING" ] || [ "$STATUS" = "PENDING" ]; do
             sleep 10
             STATUS=$(curl -s \
@@ -84,7 +78,6 @@ jobs:
             echo "Status atual: $STATUS"
           done
 
-          # Checa o resultado final
           FINAL_STATUS=$(curl -s \
             -H "Authorization: Bearer $DATABRICKS_TOKEN" \
             "${DATABRICKS_HOST}/api/2.1/jobs/runs/get?run_id=$(cat run_id.txt)" | \
@@ -97,7 +90,7 @@ jobs:
             exit 1
           fi
 
-      # 7️ Salva Run ID como artifact para auditoria
+      # 7️ Salva Run ID como artifact
       - name: Upload Run ID artifact
         uses: actions/upload-artifact@v3
         with:
