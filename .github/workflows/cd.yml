@@ -16,7 +16,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Debug inicial do workflow_run
+      # -----------------------------
+      # Passo 0: Debug inicial
+      # -----------------------------
       - name: Debug workflow_run event
         run: |
           echo "==== DEBUG workflow_run ===="
@@ -26,7 +28,9 @@ jobs:
           echo "Commit do CI: ${{ github.event.workflow_run.head_sha }}"
           echo "==== FIM DEBUG ===="
 
-      # Verificar se workflow_run existe
+      # -----------------------------
+      # Passo 0.1: Verificar workflow_run
+      # -----------------------------
       - name: Check workflow_run exists
         run: |
           if [ -z "${{ github.event.workflow_run.id }}" ]; then
@@ -36,32 +40,42 @@ jobs:
             echo "workflow_run detectado com sucesso: ${{ github.event.workflow_run.id }}"
           fi
 
-      # Checkout do commit que passou no CI
+      # -----------------------------
+      # Passo 1: Checkout do commit
+      # -----------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
-      # Configurar Python
+      # -----------------------------
+      # Passo 2: Setup Python
+      # -----------------------------
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: 3.11
 
-      # Instalar dependências
+      # -----------------------------
+      # Passo 3: Instalar dependências
+      # -----------------------------
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install requests
 
-      # Definir input_path
+      # -----------------------------
+      # Passo 4: Definir input_path
+      # -----------------------------
       - name: Define input_path
         run: |
           INPUT_PATH="/Volumes/saas_project/core/landing/crypto_sentiment_prediction_dataset.csv"
           echo "INPUT_PATH=$INPUT_PATH" >> $GITHUB_ENV
           echo "input_path definido: $INPUT_PATH"
 
-      # Trigger do Job Databricks
+      # -----------------------------
+      # Passo 5: Trigger do Job Databricks
+      # -----------------------------
       - name: Trigger Databricks Job
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
@@ -84,14 +98,16 @@ jobs:
 
           echo "Resposta completa do Job: $RESPONSE"
 
-          RUN_ID=$(echo "$RESPONSE" | python -c "import sys, json; print(json.load(sys.stdin).get('run_id', ''))")
+          RUN_ID=$(echo "$RESPONSE" | python -c "import sys,json; print(json.load(sys.stdin).get('run_id',''))")
           if [ -z "$RUN_ID" ]; then
             echo "Erro: Não foi possível extrair run_id. Saindo..."
             exit 1
           fi
           echo "Run ID: $RUN_ID" > run_id.txt
 
-      # Esperar o Job finalizar de forma segura
+      # -----------------------------
+      # Passo 6: Esperar Job finalizar (loop seguro)
+      # -----------------------------
       - name: Wait for Databricks Job
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
@@ -100,9 +116,10 @@ jobs:
           MAX_WAIT=1200
           ELAPSED=0
           STATUS="PENDING"
+          FINAL_STATUS="UNKNOWN"
           echo "Aguardando finalização do Job..."
 
-          while [ "$STATUS" = "RUNNING" ] || [ "$STATUS" = "PENDING" ]; do
+          while [[ "$STATUS" == "RUNNING" || "$STATUS" == "PENDING" ]]; do
             sleep 10
             ELAPSED=$((ELAPSED + 10))
             if [ $ELAPSED -gt $MAX_WAIT ]; then
@@ -116,29 +133,33 @@ jobs:
             echo "Resposta crua do Databricks:"
             echo "$RESPONSE"
 
-            if [ -z "$RESPONSE" ]; then
-              echo "Resposta vazia, aguardando..."
-              continue
+            # Só parsear se for JSON
+            if echo "$RESPONSE" | grep -q '{'; then
+              STATUS=$(echo "$RESPONSE" | python -c "import sys,json; print(json.load(sys.stdin)['state']['life_cycle_state'])")
+              FINAL_STATUS=$(echo "$RESPONSE" | python -c "import sys,json; print(json.load(sys.stdin)['state'].get('result_state','UNKNOWN'))")
+              echo "Status atual: $STATUS | Status final conhecido: $FINAL_STATUS"
+            else
+              echo "Resposta inválida ou vazia, aguardando..."
             fi
-
-            STATUS=$(echo "$RESPONSE" | python -c "import sys,json; print(json.load(sys.stdin)['state']['life_cycle_state'])")
-            echo "Status atual: $STATUS"
           done
 
-          FINAL_STATUS=$(echo "$RESPONSE" | python -c "import sys,json; print(json.load(sys.stdin)['state'].get('result_state', 'UNKNOWN'))")
           echo "Status final do Job: $FINAL_STATUS"
 
-          if [ "$FINAL_STATUS" != "SUCCESS" ]; then
+          if [[ "$FINAL_STATUS" != "SUCCESS" ]]; then
             echo "Erro: Job do Databricks falhou!"
             exit 1
 
-      # Salvar run_id como artifact
+      # -----------------------------
+      # Passo 7: Salvar run_id como artifact
+      # -----------------------------
       - name: Upload Run ID artifact
         uses: actions/upload-artifact@v4
         with:
           name: databricks-run-id
           path: run_id.txt
 
-      # Mensagem final de sucesso
+      # -----------------------------
+      # Passo 8: Mensagem final de sucesso
+      # -----------------------------
       - name: Success message
         run: echo "CD executado com sucesso! Job do Databricks finalizado."
