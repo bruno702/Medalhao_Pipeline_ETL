@@ -11,75 +11,84 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      #  Pega o código do repositório
-      - name: Checkout code
+      # -----------------------------
+      # 0️ Checkout do código do repositório
+      # -----------------------------
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      #  Configura Python
-      - name: Setup Python
+      # -----------------------------
+      # 1️ Setup Python
+      # -----------------------------
+      - name: Setup Python 3.11
         uses: actions/setup-python@v4
         with:
           python-version: 3.11
 
-      #  Instala dependências
+      # -----------------------------
+      # 2️ Instalar dependências
+      # -----------------------------
       - name: Install dependencies
         run: |
+          set -e
           python -m pip install --upgrade pip
           pip install jupyter papermill pandas numpy
- 
-      #  Mensagem inicial do CI
+
+      # -----------------------------
+      # 3️ Mensagem inicial
+      # -----------------------------
       - name: Start CI
         run: echo "Starting CI for Medalhao Pipeline ETL"
 
-      #  Verifica pasta pipeline
-      - name: Verify pipeline folder
+      # -----------------------------
+      # 4️ Definir notebooks com paths absolutos
+      # -----------------------------
+      - name: Define notebooks
         run: |
-          if [ -d "pipeline" ]; then
-            echo "Pipeline folder exists."
-          else
-            echo "Pipeline folder NOT found!"
-            exit 1
-          fi
-
-      #  Verifica todos os notebooks
-      - name: Verify notebooks
-        run: |
+          set -e
           NOTEBOOKS=(
-            "01_orquestrador/00_orquestrador.ipynb"
-            "02_ingestao_bronze/01_ingestao_bronze.ipynb"
-            "03_tratamento_silver/02_bronze_para_silver.ipynb"
-            "03_tratamento_silver/03_SilverRobusto.ipynb"
-            "04_silver_para_gold/04_silver_para_gold.ipynb"
-            "05_qualidade/05_qualidade_e_alertas.ipynb"
+            "/Workspace/Users/brunoguim2025@gmail.com/Medalhao_Pipeline_ETL/pipeline/01_orquestrador/00_orquestrador.ipynb"
+            "/Workspace/Users/brunoguim2025@gmail.com/Medalhao_Pipeline_ETL/pipeline/02_ingestao_bronze/01_ingestao_bronze.ipynb"
+            "/Workspace/Users/brunoguim2025@gmail.com/Medalhao_Pipeline_ETL/pipeline/03_tratamento_silver/02_bronze_para_silver.ipynb"
+            "/Workspace/Users/brunoguim2025@gmail.com/Medalhao_Pipeline_ETL/pipeline/03_tratamento_silver/03_SilverRobusto.ipynb"
+            "/Workspace/Users/brunoguim2025@gmail.com/Medalhao_Pipeline_ETL/pipeline/04_silver_para_gold/04_silver_para_gold.ipynb"
+            "/Workspace/Users/brunoguim2025@gmail.com/Medalhao_Pipeline_ETL/pipeline/05_qualidade/05_qualidade_e_alertas.ipynb"
           )
 
+          # Verifica se todos existem
           MISSING=()
           for nb in "${NOTEBOOKS[@]}"; do
-            if [ ! -f "pipeline/$nb" ]; then
+            if [ ! -f "$nb" ]; then
               MISSING+=("$nb")
             fi
           done
 
           if [ ${#MISSING[@]} -ne 0 ]; then
-            echo "Missing notebooks:"
+            echo "ERROR: Missing notebooks:"
             printf '%s\n' "${MISSING[@]}"
             exit 1
           else
             echo "All notebooks found!"
-          fi
 
-      #  Cria pasta de saída para notebooks executados
+      # -----------------------------
+      # 5️ Criar pasta de saída
+      # -----------------------------
       - name: Create output folder
         run: mkdir -p output
 
-      #  Executa todos os notebooks
+      # -----------------------------
+      # 6️ Executar todos os notebooks
+      # -----------------------------
       - name: Execute notebooks
         run: |
+          set -e
           for nb in "${NOTEBOOKS[@]}"; do
             echo "Running notebook: $nb"
-            papermill "pipeline/$nb" "output/$(basename $nb)"
+            papermill "$nb" "output/$(basename $nb)"
           done
 
-      #  Mensagem final do CI
+      # -----------------------------
+      # 7️ Mensagem final
+      # -----------------------------
       - name: CI finished
-        run: echo "CI completed successfully"
+        run: echo "CI completed successfully. All notebooks executed from the GitHub clone paths."
