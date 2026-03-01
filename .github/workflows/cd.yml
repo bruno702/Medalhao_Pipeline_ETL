@@ -86,7 +86,7 @@ jobs:
           echo "Run ID: $RUN_ID" > run_id.txt
 
       # -----------------------------
-      # Passo 5: Esperar Job finalizar (totalmente protegido)
+      # Passo 5: Esperar Job finalizar (robusto, sem fail prematuro)
       # -----------------------------
       - name: Wait for Databricks Job
         env:
@@ -96,12 +96,8 @@ jobs:
           MAX_WAIT=1200
           ELAPSED=0
 
-          LIFE_STATE="PENDING"
-          RESULT_STATE="UNKNOWN"
-
           echo "Aguardando finalização do Job..."
 
-          # Checa se run_id.txt existe
           if [ ! -s run_id.txt ]; then
             echo "Erro: run_id.txt vazio ou não existe."
             exit 1
@@ -117,23 +113,23 @@ jobs:
             fi
 
             RESPONSE=$(curl -s -H "Authorization: Bearer $DATABRICKS_TOKEN" \
-              "$DATABRICKS_HOST/api/2.1/jobs/runs/get?run_id=$(cat run_id.txt)")
+              "$DATABRICKS_HOST/api/2.1/jobs/runs/get?run_id=$(cat run_id.txt)" || echo "{}")
 
-            # Ignora resposta inválida ou não JSON
+            # Ignora JSON inválido temporário
             if ! echo "$RESPONSE" | python -c "import sys,json; json.load(sys.stdin)" >/dev/null 2>&1; then
               echo "Aviso: Resposta inválida do Databricks, tentando novamente..."
               continue
             fi
 
             LIFE_STATE=$(echo "$RESPONSE" | python -c "import sys,json; d=json.load(sys.stdin); print(d.get('state',{}).get('life_cycle_state','UNKNOWN'))")
-
-            # Se job ainda não iniciou ou está rodando, continua sem atualizar result_state
+            
+            # Continua se job ainda estiver rodando
             if [ "$LIFE_STATE" = "PENDING" ] || [ "$LIFE_STATE" = "RUNNING" ]; then
               echo "Job ainda em execução ($LIFE_STATE), aguardando..."
               continue
             fi
 
-            # Extrai result_state apenas quando o job tiver terminado
+            # Extrai result_state apenas se TERMINATED
             RESULT_STATE=$(echo "$RESPONSE" | python -c "import sys,json; d=json.load(sys.stdin); print(d.get('state',{}).get('result_state','UNKNOWN'))")
 
             echo "Life cycle: $LIFE_STATE | Result: $RESULT_STATE"
@@ -143,8 +139,7 @@ jobs:
             fi
           done
 
-          echo "Estado final: $RESULT_STATE"
-
+          # Fail só se terminar com resultado diferente de SUCCESS
           if [ "$RESULT_STATE" != "SUCCESS" ]; then
             echo "Erro: Job do Databricks não finalizou com sucesso."
             exit 1
