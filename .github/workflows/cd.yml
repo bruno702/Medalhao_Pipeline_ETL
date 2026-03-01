@@ -86,7 +86,7 @@ jobs:
           echo "Run ID: $RUN_ID" > run_id.txt
 
       # -----------------------------
-      # Passo 5: Esperar Job finalizar (protegido)
+      # Passo 5: Esperar Job finalizar (protegido contra JSON inválido)
       # -----------------------------
       - name: Wait for Databricks Job
         env:
@@ -113,13 +113,13 @@ jobs:
             RESPONSE=$(curl -s -H "Authorization: Bearer $DATABRICKS_TOKEN" \
               "$DATABRICKS_HOST/api/2.1/jobs/runs/get?run_id=$(cat run_id.txt)")
 
-            # Valida se a resposta é JSON válido
+            # Protege contra JSON inválido
             if ! echo "$RESPONSE" | python -c "import sys,json; json.load(sys.stdin)" >/dev/null 2>&1; then
               echo "Aviso: Resposta inválida do Databricks, tentando novamente..."
               continue
             fi
 
-            # Extrai os estados somente se JSON válido
+            # Extrai estados apenas se JSON válido
             LIFE_STATE=$(echo "$RESPONSE" | python -c "import sys,json; d=json.load(sys.stdin); print(d.get('state',{}).get('life_cycle_state','UNKNOWN'))")
             RESULT_STATE=$(echo "$RESPONSE" | python -c "import sys,json; d=json.load(sys.stdin); print(d.get('state',{}).get('result_state','UNKNOWN'))")
 
