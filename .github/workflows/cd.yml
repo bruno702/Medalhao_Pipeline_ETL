@@ -71,14 +71,18 @@ jobs:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
           DATABRICKS_JOB_ID: ${{ secrets.DATABRICKS_JOB_ID }}
+          INPUT_PATH: ${{ secrets.DATABRICKS_INPUT_PATH }}  # <- O input que seu Job espera
         run: |
-          echo "Disparando Job $DATABRICKS_JOB_ID"
+          echo "Disparando Job $DATABRICKS_JOB_ID com input_path=$INPUT_PATH"
 
           RESPONSE=$(curl -s -X POST \
             -H "Authorization: Bearer $DATABRICKS_TOKEN" \
             -H "Content-Type: application/json" \
             -d "{
-                  \"job_id\": $DATABRICKS_JOB_ID
+                  \"job_id\": $DATABRICKS_JOB_ID,
+                  \"notebook_params\": {
+                      \"input_path\": \"$INPUT_PATH\"
+                  }
                 }" \
             "$DATABRICKS_HOST/api/2.1/jobs/run-now")
 
