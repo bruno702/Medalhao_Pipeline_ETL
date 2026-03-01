@@ -16,9 +16,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # -----------------------------
-      # Passo 0: Debug inicial
-      # -----------------------------
+
       - name: Debug workflow_run event
         run: |
           echo "==== DEBUG workflow_run ===="
@@ -28,40 +26,29 @@ jobs:
           echo "Commit do CI: ${{ github.event.workflow_run.head_sha }}"
           echo "==== FIM DEBUG ===="
 
-      # -----------------------------
-      # Passo 1: Checkout do commit
-      # -----------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
-      # -----------------------------
-      # Passo 2: Setup Python
-      # -----------------------------
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: 3.11
 
-      # -----------------------------
-      # Passo 3: Instalar dependências
-      # -----------------------------
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests
 
-      # -----------------------------
-      # Passo 4: Trigger Databricks Job
-      # -----------------------------
+      # -------------------------------------------------
+      # Trigger do Job
+      # -------------------------------------------------
       - name: Trigger Databricks Job
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
           DATABRICKS_JOB_ID: ${{ secrets.DATABRICKS_JOB_ID }}
         run: |
-          # Aqui você passa qualquer valor para o input_path
           INPUT_PATH="trigger_github"
 
           echo "Disparando Job $DATABRICKS_JOB_ID com input_path=$INPUT_PATH"
@@ -70,25 +57,37 @@ jobs:
             -H "Authorization: Bearer $DATABRICKS_TOKEN" \
             -H "Content-Type: application/json" \
             -d "{
-                  \"job_id\": $DATABRICKS_JOB_ID,
-                  \"notebook_params\": {
-                      \"input_path\": \"$INPUT_PATH\"
-                  }
-                }" \
+              \"job_id\": $DATABRICKS_JOB_ID,
+              \"notebook_params\": {
+                \"input_path\": \"$INPUT_PATH\"
+              }
+            }" \
             "$DATABRICKS_HOST/api/2.1/jobs/run-now")
 
-          echo "Resposta completa do Job: $RESPONSE"
+          echo "Resposta completa:"
+          echo "$RESPONSE"
 
-          RUN_ID=$(echo "$RESPONSE" | python -c "import sys,json; print(json.load(sys.stdin).get('run_id',''))")
+          RUN_ID=$(echo "$RESPONSE" | python - << 'EOF'
+import json,sys
+try:
+    data = json.load(sys.stdin)
+    print(data.get("run_id",""))
+except:
+    print("")
+EOF
+)
+
           if [ -z "$RUN_ID" ]; then
-            echo "Erro: Não foi possível extrair run_id. Saindo..."
+            echo "Erro: run_id não retornado pelo Databricks"
             exit 1
           fi
-          echo "Run ID: $RUN_ID" > run_id.txt
 
-      # -----------------------------
-      # Passo 5: Esperar Job finalizar
-      # -----------------------------
+          echo "$RUN_ID" > run_id.txt
+          echo "Run ID: $RUN_ID"
+
+      # -------------------------------------------------
+      # Espera o Job finalizar
+      # -------------------------------------------------
       - name: Wait for Databricks Job
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
@@ -98,46 +97,59 @@ jobs:
           ELAPSED=0
           STATUS="PENDING"
           FINAL_STATUS="UNKNOWN"
+
           echo "Aguardando finalização do Job..."
 
           while [[ "$STATUS" == "RUNNING" || "$STATUS" == "PENDING" ]]; do
+
             sleep 10
             ELAPSED=$((ELAPSED + 10))
+
             if [ $ELAPSED -gt $MAX_WAIT ]; then
-              echo "Erro: Timeout esperando job Databricks"
+              echo "Erro: timeout esperando job Databricks"
               exit 1
             fi
 
-            RESPONSE=$(curl -s -H "Authorization: Bearer $DATABRICKS_TOKEN" \
+            RESPONSE=$(curl -s \
+              -H "Authorization: Bearer $DATABRICKS_TOKEN" \
               "$DATABRICKS_HOST/api/2.1/jobs/runs/get?run_id=$(cat run_id.txt)")
 
-            if ! echo "$RESPONSE" | grep -q '{'; then
-              echo "Resposta inválida ou vazia, continuando espera..."
-              continue
-            fi
+            STATUS=$(echo "$RESPONSE" | python - << 'EOF'
+import json,sys
+try:
+    d=json.load(sys.stdin)
+    print(d["state"]["life_cycle_state"])
+except:
+    print("PENDING")
+EOF
+)
 
-            STATUS=$(echo "$RESPONSE" | python -c "import sys,json; print(json.load(sys.stdin)['state']['life_cycle_state'])")
-            FINAL_STATUS=$(echo "$RESPONSE" | python -c "import sys,json; print(json.load(sys.stdin)['state'].get('result_state','UNKNOWN'))")
+            FINAL_STATUS=$(echo "$RESPONSE" | python - << 'EOF'
+import json,sys
+try:
+    d=json.load(sys.stdin)
+    print(d["state"].get("result_state","UNKNOWN"))
+except:
+    print("UNKNOWN")
+EOF
+)
 
-            echo "Status atual: $STATUS | Status final conhecido: $FINAL_STATUS"
+            echo "Status atual: $STATUS | Status final: $FINAL_STATUS"
+
           done
 
           echo "Status final do Job: $FINAL_STATUS"
-          if [[ "$FINAL_STATUS" == "FAILED" ]]; then
-            echo "Erro: Job do Databricks falhou!"
-            exit 1
 
-      # -----------------------------
-      # Passo 6: Salvar run_id como artifact
-      # -----------------------------
+          if [[ "$FINAL_STATUS" == "FAILED" ]]; then
+            echo "Erro: Job do Databricks falhou"
+            exit 1
+          fi
+
       - name: Upload Run ID artifact
         uses: actions/upload-artifact@v4
         with:
           name: databricks-run-id
           path: run_id.txt
 
-      # -----------------------------
-      # Passo 7: Mensagem final de sucesso
-      # -----------------------------
       - name: Success message
-        run: echo "CD executado com sucesso! Job do Databricks finalizado com sucesso."
+        run: echo "CD finalizado com sucesso"
