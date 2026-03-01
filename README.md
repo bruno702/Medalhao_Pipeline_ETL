@@ -1,7 +1,7 @@
 
 # Medalhão Pipeline ETL
 
-[![CI](https://github.com/bruno702/Medalhao_Pipeline_ETL/workflows/CI/Medalhao_Pipeline_ETL/badge.svg)](https://github.com/bruno702/Medalhao_Pipeline_ETL/actions/workflows/CI_Medalhao_Pipeline_ETL.yml)
+[![CI](https://github.com/bruno702/Medalhao_Pipeline_ETL/workflows/CI/Medalhao_Pipeline_ETL/badge.svg)](https://github.com/bruno702/Medalhao_Pipeline_ETL/actions/workflows/ci.yml)
 [![CD](https://github.com/bruno702/Medalhao_Pipeline_ETL/workflows/CD/Medalhao_Pipeline_ETL/badge.svg)](https://github.com/bruno702/Medalhao_Pipeline_ETL/actions/workflows/cd.yml)
 
 Pipeline completo no **Databricks** com PySpark para transformar dados brutos em informações limpas e prontas para análise.
