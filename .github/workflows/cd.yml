@@ -62,7 +62,6 @@ jobs:
           DATABRICKS_JOB_ID: ${{ secrets.DATABRICKS_JOB_ID }}
         run: |
           INPUT_PATH="trigger_github"
-
           echo "Disparando Job $DATABRICKS_JOB_ID com input_path=$INPUT_PATH"
 
           RESPONSE=$(curl -s -X POST \
@@ -76,12 +75,27 @@ jobs:
                 }" \
             "$DATABRICKS_HOST/api/2.1/jobs/run-now")
 
-          echo "Resposta completa do Databricks:"
-          echo "$RESPONSE" | jq .
+          # Tenta extrair run_id várias vezes se JSON inválido
+          RUN_ID=""
+          for i in {1..5}; do
+            RUN_ID=$(echo "$RESPONSE" | python -c "import sys,json; print(json.load(sys.stdin).get('run_id',''))" 2>/dev/null)
+            if [ -n "$RUN_ID" ]; then break; fi
+            echo "Aviso: run_id não encontrado, tentando novamente..."
+            sleep 5
+            RESPONSE=$(curl -s -X POST \
+              -H "Authorization: Bearer $DATABRICKS_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{
+                    \"job_id\": $DATABRICKS_JOB_ID,
+                    \"notebook_params\": {
+                        \"input_path\": \"$INPUT_PATH\"
+                    }
+                  }" \
+              "$DATABRICKS_HOST/api/2.1/jobs/run-now")
+          done
 
-          RUN_ID=$(echo "$RESPONSE" | python -c "import sys,json; print(json.load(sys.stdin).get('run_id',''))")
           if [ -z "$RUN_ID" ]; then
-            echo "Erro: Não foi possível extrair run_id. Saindo..."
+            echo "Erro crítico: Não foi possível extrair run_id do Databricks. Saindo..."
             exit 1
           fi
 
@@ -115,9 +129,9 @@ jobs:
             echo "Resposta do Databricks:"
             echo "$RESPONSE" | jq .
 
-            # Proteção contra JSON inválido
+            # Protege contra JSON inválido
             if ! echo "$RESPONSE" | python -c "import sys,json; json.load(sys.stdin)" >/dev/null 2>&1; then
-              echo "Aviso: Resposta inválida do Databricks, tentando novamente..."
+              echo "Aviso: JSON inválido, tentando novamente..."
               continue
             fi
 
