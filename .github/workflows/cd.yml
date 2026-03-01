@@ -86,7 +86,7 @@ jobs:
           echo "Run ID: $RUN_ID" > run_id.txt
 
       # -----------------------------
-      # Passo 5: Esperar Job finalizar (robusto, sem fail prematuro)
+      # Passo 5: Esperar Job finalizar (robusto e finaliza com sucesso)
       # -----------------------------
       - name: Wait for Databricks Job
         env:
@@ -144,6 +144,9 @@ jobs:
             echo "Erro: Job do Databricks não finalizou com sucesso."
             exit 1
           fi
+
+          #  Mensagem final de sucesso do step
+          echo "CD completo: Job do Databricks finalizou com sucesso!"
 
       # -----------------------------
       # Passo 6: Salvar run_id como artifact
