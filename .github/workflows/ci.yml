@@ -26,7 +26,7 @@ jobs:
           python-version: 3.11
 
       # -----------------------------
-      #  Instalar dependências
+      # 2️ Instalar dependências
       # -----------------------------
       - name: Install dependencies
         run: |
@@ -41,18 +41,18 @@ jobs:
         run: echo "Starting CI for Medalhao Pipeline ETL"
 
       # -----------------------------
-      # 4️ Definir notebooks com paths absolutos do Databricks
+      # 4️ Definir notebooks com paths relativos (funciona no GitHub Actions)
       # -----------------------------
       - name: Define notebooks
         run: |
           set -e
           NOTEBOOKS=(
-            "/Workspace/Users/brunoguim2025@gmail.com/Medalhao_Pipeline_ETL/pipeline/01_orquestrador/00_orquestrador.ipynb"
-            "/Workspace/Users/brunoguim2025@gmail.com/Medalhao_Pipeline_ETL/pipeline/02_ingestao_bronze/01_ingestao_bronze.ipynb"
-            "/Workspace/Users/brunoguim2025@gmail.com/Medalhao_Pipeline_ETL/pipeline/03_tratamento_silver/02_bronze_para_silver.ipynb"
-            "/Workspace/Users/brunoguim2025@gmail.com/Medalhao_Pipeline_ETL/pipeline/03_tratamento_silver/03_SilverRobusto.ipynb"
-            "/Workspace/Users/brunoguim2025@gmail.com/Medalhao_Pipeline_ETL/pipeline/04_silver_para_gold/04_silver_para_gold.ipynb"
-            "/Workspace/Users/brunoguim2025@gmail.com/Medalhao_Pipeline_ETL/pipeline/05_qualidade/05_qualidade_e_alertas.ipynb"
+            "pipeline/01_orquestrador/00_orquestrador.ipynb"
+            "pipeline/02_ingestao_bronze/01_ingestao_bronze.ipynb"
+            "pipeline/03_tratamento_silver/02_bronze_para_silver.ipynb"
+            "pipeline/03_tratamento_silver/03_SilverRobusto.ipynb"
+            "pipeline/04_silver_para_gold/04_silver_para_gold.ipynb"
+            "pipeline/05_qualidade/05_qualidade_e_alertas.ipynb"
           )
 
           # Verifica se todos os notebooks existem
@@ -71,7 +71,7 @@ jobs:
             echo "All notebooks found!"
 
       # -----------------------------
-      # 5️ Criar pasta de saída para notebooks executados
+      # 5️ Criar pasta de saída
       # -----------------------------
       - name: Create output folder
         run: mkdir -p output
@@ -84,11 +84,13 @@ jobs:
           set -e
           for nb in "${NOTEBOOKS[@]}"; do
             echo "Running notebook: $nb"
-            papermill "$nb" "output/$(basename $nb)"
+            papermill "$nb" "output/$(basename $nb)" \
+              --progress-bar \
+              --log-output
           done
 
       # -----------------------------
       # 7️ Mensagem final de sucesso
       # -----------------------------
       - name: CI finished
-        run: echo "CI completed successfully. All notebooks executed from Databricks workspace paths."
+        run: echo "CI completed successfully. All notebooks executed from GitHub clone paths."
