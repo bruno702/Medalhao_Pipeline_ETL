@@ -107,13 +107,13 @@ jobs:
             RESPONSE=$(curl -s -H "Authorization: Bearer $DATABRICKS_TOKEN" \
               "$DATABRICKS_HOST/api/2.1/jobs/runs/get?run_id=$(cat run_id.txt)" || echo "{}")
 
-            # Extrai life_cycle_state, se JSON inválido, assume PENDING
+            # Extrai life_cycle_state, assume PENDING se JSON inválido
             LIFE_STATE=$(echo "$RESPONSE" | python -c "import sys,json; d=json.load(sys.stdin); print(d.get('state',{}).get('life_cycle_state','PENDING'))" 2>/dev/null)
 
             # Se TERMINATED, extrai result_state e quebra loop imediatamente
             if [ "$LIFE_STATE" = "TERMINATED" ]; then
-              RESULT_STATE=$(echo "$RESPONSE" | python -c "import sys,json; d=json.load(sys.stdin); print(d.get('state',{}).get('result_state','FAILED'))" 2>/dev/null)
-              break
+                RESULT_STATE=$(echo "$RESPONSE" | python -c "import sys,json; d=json.load(sys.stdin); print(d.get('state',{}).get('result_state','FAILED'))" 2>/dev/null)
+                break
             fi
 
             echo "Job ainda em execução ($LIFE_STATE), aguardando..."
@@ -128,11 +128,10 @@ jobs:
 
           # Fail apenas se result_state != SUCCESS
           if [ "$RESULT_STATE" != "SUCCESS" ]; then
-            echo "Erro: Job do Databricks não finalizou com sucesso."
-            exit 1
+              echo "Erro: Job do Databricks não finalizou com sucesso."
+              exit 1
           fi
 
-          #  Mensagem final de sucesso
           echo "CD completo: Job do Databricks finalizou com sucesso!"
 
       # -----------------------------
