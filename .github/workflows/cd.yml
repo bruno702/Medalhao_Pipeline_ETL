@@ -29,17 +29,6 @@ jobs:
           echo "==== FIM DEBUG ===="
 
       # -----------------------------
-      # Passo 0.1: Verificar workflow_run
-      # -----------------------------
-      - name: Check workflow_run exists
-        run: |
-          if [ -z "${{ github.event.workflow_run.id }}" ]; then
-            echo "Erro: workflow_run não encontrado. CD não será executado."
-            exit 1
-          else
-            echo "workflow_run detectado com sucesso: ${{ github.event.workflow_run.id }}"
-
-      # -----------------------------
       # Passo 1: Checkout do commit
       # -----------------------------
       - name: Checkout repository
@@ -71,8 +60,10 @@ jobs:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
           DATABRICKS_JOB_ID: ${{ secrets.DATABRICKS_JOB_ID }}
-          INPUT_PATH: ${{ secrets.DATABRICKS_INPUT_PATH }}  # <- O input que seu Job espera
         run: |
+          # Aqui você passa qualquer valor para o input_path
+          INPUT_PATH="trigger_github"
+
           echo "Disparando Job $DATABRICKS_JOB_ID com input_path=$INPUT_PATH"
 
           RESPONSE=$(curl -s -X POST \
@@ -96,7 +87,7 @@ jobs:
           echo "Run ID: $RUN_ID" > run_id.txt
 
       # -----------------------------
-      # Passo 5: Esperar Job finalizar (loop robusto)
+      # Passo 5: Esperar Job finalizar
       # -----------------------------
       - name: Wait for Databricks Job
         env:
@@ -132,7 +123,6 @@ jobs:
           done
 
           echo "Status final do Job: $FINAL_STATUS"
-
           if [[ "$FINAL_STATUS" == "FAILED" ]]; then
             echo "Erro: Job do Databricks falhou!"
             exit 1
