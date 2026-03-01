@@ -18,15 +18,15 @@ jobs:
         uses: actions/checkout@v4
 
       # -----------------------------
-      # 1️ Setup Python
+      # 1️ Setup Python 3.11
       # -----------------------------
-      - name: Setup Python 3.11
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: 3.11
 
       # -----------------------------
-      # 2️ Instalar dependências
+      #  Instalar dependências
       # -----------------------------
       - name: Install dependencies
         run: |
@@ -41,7 +41,7 @@ jobs:
         run: echo "Starting CI for Medalhao Pipeline ETL"
 
       # -----------------------------
-      # 4️ Definir notebooks com paths absolutos
+      # 4️ Definir notebooks com paths absolutos do Databricks
       # -----------------------------
       - name: Define notebooks
         run: |
@@ -55,7 +55,7 @@ jobs:
             "/Workspace/Users/brunoguim2025@gmail.com/Medalhao_Pipeline_ETL/pipeline/05_qualidade/05_qualidade_e_alertas.ipynb"
           )
 
-          # Verifica se todos existem
+          # Verifica se todos os notebooks existem
           MISSING=()
           for nb in "${NOTEBOOKS[@]}"; do
             if [ ! -f "$nb" ]; then
@@ -71,13 +71,13 @@ jobs:
             echo "All notebooks found!"
 
       # -----------------------------
-      # 5️ Criar pasta de saída
+      # 5️ Criar pasta de saída para notebooks executados
       # -----------------------------
       - name: Create output folder
         run: mkdir -p output
 
       # -----------------------------
-      # 6️ Executar todos os notebooks
+      # 6️ Executar todos os notebooks com papermill
       # -----------------------------
       - name: Execute notebooks
         run: |
@@ -88,7 +88,7 @@ jobs:
           done
 
       # -----------------------------
-      # 7️ Mensagem final
+      # 7️ Mensagem final de sucesso
       # -----------------------------
       - name: CI finished
-        run: echo "CI completed successfully. All notebooks executed from the GitHub clone paths."
+        run: echo "CI completed successfully. All notebooks executed from Databricks workspace paths."
