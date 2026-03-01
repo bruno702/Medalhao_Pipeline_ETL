@@ -38,7 +38,6 @@ jobs:
             exit 1
           else
             echo "workflow_run detectado com sucesso: ${{ github.event.workflow_run.id }}"
-          fi
 
       # -----------------------------
       # Passo 1: Checkout do commit
@@ -65,34 +64,21 @@ jobs:
           pip install requests
 
       # -----------------------------
-      # Passo 4: Definir input_path
-      # -----------------------------
-      - name: Define input_path
-        run: |
-          INPUT_PATH="/Volumes/saas_project/core/landing/crypto_sentiment_prediction_dataset.csv"
-          echo "INPUT_PATH=$INPUT_PATH" >> $GITHUB_ENV
-          echo "input_path definido: $INPUT_PATH"
-
-      # -----------------------------
-      # Passo 5: Trigger Databricks Job
+      # Passo 4: Trigger Databricks Job
       # -----------------------------
       - name: Trigger Databricks Job
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
           DATABRICKS_JOB_ID: ${{ secrets.DATABRICKS_JOB_ID }}
-          INPUT_PATH: ${{ env.INPUT_PATH }}
         run: |
-          echo "Disparando Job $DATABRICKS_JOB_ID com input_path=$INPUT_PATH"
+          echo "Disparando Job $DATABRICKS_JOB_ID"
 
           RESPONSE=$(curl -s -X POST \
             -H "Authorization: Bearer $DATABRICKS_TOKEN" \
             -H "Content-Type: application/json" \
             -d "{
-                  \"job_id\": $DATABRICKS_JOB_ID,
-                  \"notebook_params\": {
-                      \"input_path\": \"$INPUT_PATH\"
-                  }
+                  \"job_id\": $DATABRICKS_JOB_ID
                 }" \
             "$DATABRICKS_HOST/api/2.1/jobs/run-now")
 
@@ -106,7 +92,7 @@ jobs:
           echo "Run ID: $RUN_ID" > run_id.txt
 
       # -----------------------------
-      # Passo 6: Esperar Job finalizar (loop robusto)
+      # Passo 5: Esperar Job finalizar (loop robusto)
       # -----------------------------
       - name: Wait for Databricks Job
         env:
@@ -130,7 +116,6 @@ jobs:
             RESPONSE=$(curl -s -H "Authorization: Bearer $DATABRICKS_TOKEN" \
               "$DATABRICKS_HOST/api/2.1/jobs/runs/get?run_id=$(cat run_id.txt)")
 
-            # Ignora respostas inválidas temporárias
             if ! echo "$RESPONSE" | grep -q '{'; then
               echo "Resposta inválida ou vazia, continuando espera..."
               continue
@@ -144,13 +129,12 @@ jobs:
 
           echo "Status final do Job: $FINAL_STATUS"
 
-          # Falha somente se o Databricks reportar FAILED
           if [[ "$FINAL_STATUS" == "FAILED" ]]; then
             echo "Erro: Job do Databricks falhou!"
             exit 1
 
       # -----------------------------
-      # Passo 7: Salvar run_id como artifact
+      # Passo 6: Salvar run_id como artifact
       # -----------------------------
       - name: Upload Run ID artifact
         uses: actions/upload-artifact@v4
@@ -159,12 +143,7 @@ jobs:
           path: run_id.txt
 
       # -----------------------------
-      # Passo 8: Mensagem final de sucesso
+      # Passo 7: Mensagem final de sucesso
       # -----------------------------
       - name: Success message
         run: echo "CD executado com sucesso! Job do Databricks finalizado com sucesso."
-
-# -----------------------------
-# Pequena alteração para disparar commit
-# -----------------------------
-# Esta linha garante que o Git detecte alteração no arquivo para commit e push
