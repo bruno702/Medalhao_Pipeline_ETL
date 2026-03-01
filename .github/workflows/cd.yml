@@ -86,14 +86,14 @@ jobs:
           echo "Job disparado com sucesso. Iniciando monitoramento..."
 
       # -----------------------------
-      # Passo 5: Monitorar job do Databricks com timeout
+      # Passo 5: Esperar o Databricks Job terminar
       # -----------------------------
       - name: Wait for Databricks Job
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
-          MAX_WAIT=1800   # 30 minutos de timeout
+          MAX_WAIT=1800   # Timeout em segundos (30 minutos)
           ELAPSED=0
           LIFE_STATE="PENDING"
           RESULT_STATE="UNKNOWN"
@@ -109,7 +109,7 @@ jobs:
             RESPONSE=$(curl -s -H "Authorization: Bearer $DATABRICKS_TOKEN" \
               "$DATABRICKS_HOST/api/2.1/jobs/runs/get?run_id=$(cat run_id.txt)")
 
-            # Protege contra JSON inválido
+            # Proteção contra JSON inválido
             if ! echo "$RESPONSE" | python -c "import sys,json; json.load(sys.stdin)" >/dev/null 2>&1; then
               echo "Aviso: Resposta inválida do Databricks, tentando novamente..."
               continue
