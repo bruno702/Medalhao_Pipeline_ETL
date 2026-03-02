@@ -99,8 +99,6 @@ Este projeto demonstra como **PySpark e Databricks** podem ser usados para const
 ## Dasboard
 ![Dashboard](imagens/Dasbord.png)
 
-## Dashboard
-![Dashboard](imagens/Dashbord.png)
 
 ## Job
 ![Job](imagens/JOB.png)
