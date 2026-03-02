@@ -14,6 +14,9 @@ O projeto combina **orquestração, tratamento de dados e monitoramento de quali
 ---
 **CI:** CI com GitHub Actions validando e executando todos os notebooks do pipeline Medalhão ETL. Inclui verificação de arquivos, execução automática via Papermill, gestão de dependências e upload de artifacts.
 
+**CD:** CD com GitHub Actions e Databricks:
+Dispara automaticamente o job do pipeline Medalhão ETL após o sucesso do CI. Monitora o job no Databricks até a conclusão, reflete o status final (sucesso ou falha) no GitHub, e registra o run_id como artefato para rastreabilidade
+
 ## Bronze (Ingestão Cruda)
 
 * Recebe qualquer arquivo de entrada, sem exigir colunas específicas, garantindo **flexibilidade e escalabilidade**
