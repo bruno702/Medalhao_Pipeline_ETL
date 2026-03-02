@@ -96,9 +96,11 @@ Dispara automaticamente o job do pipeline Medalhão ETL após o sucesso do CI. M
 
 Este projeto demonstra como **PySpark e Databricks** podem ser usados para construir pipelines **escaláveis e robustos**, capazes de tratar qualquer tipo de dado, gerar métricas detalhadas e entregar resultados confiáveis para análises e dashboards.
 
+## Continuous Integration & Continuous Delivery (CI/CD)
+![CI e CD](imagens/CI-CD.png)
+
 ## Dasboard
 ![Dashboard](imagens/Dasbord.png)
-
 
 ## Job
 ![Job](imagens/JOB.png)
