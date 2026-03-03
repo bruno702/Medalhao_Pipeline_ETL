@@ -74,9 +74,7 @@ Dispara automaticamente o job do pipeline Medalhão ETL após o sucesso do CI. M
 ### 4- Gold (Dados Prontos para Consumo)
 - Dados finais totalmente tratados e estruturados.  
 - Prontos para dashboards, relatórios ou análises estratégicas.
-
-### Beleza! Aqui está uma versão **mais enxuta**, mantendo só os pontos fortes e essenciais:
-
+  
 ---
 
 ## 5- Qualidade Report – Pipeline Serverless com PySpark
