@@ -2,6 +2,7 @@
 # Medalhão Pipeline ETL
 
 [![CI](https://github.com/bruno702/Medalhao_Pipeline_ETL/actions/workflows/ci.yml/badge.svg)](https://github.com/bruno702/Medalhao_Pipeline_ETL/actions/workflows/ci.yml)
+[![CD](https://github.com/bruno702/Medalhao_Pipeline_ETL/actions/workflows/cd.yml/badge.svg)](https://github.com/bruno702/Medalhao_Pipeline_ETL/actions/workflows/cd.yml)
 
 Pipeline completo no **Databricks** com PySpark para transformar dados brutos em informações limpas e prontas para análise.
 
@@ -12,6 +13,9 @@ O projeto combina **orquestração, tratamento de dados e monitoramento de quali
 
 ---
 **CI:** CI com GitHub Actions validando e executando todos os notebooks do pipeline Medalhão ETL. Inclui verificação de arquivos, execução automática via Papermill, gestão de dependências e upload de artifacts.
+
+**CD:** CD com GitHub Actions e Databricks:
+Dispara automaticamente o job do pipeline Medalhão ETL após o sucesso do CI. Monitora o job no Databricks até a conclusão, reflete o status final (sucesso ou falha) no GitHub, e registra o run_id como artefato para rastreabilidade
 
 ## Bronze (Ingestão Cruda)
 
@@ -70,9 +74,7 @@ O projeto combina **orquestração, tratamento de dados e monitoramento de quali
 ### 4- Gold (Dados Prontos para Consumo)
 - Dados finais totalmente tratados e estruturados.  
 - Prontos para dashboards, relatórios ou análises estratégicas.
-
-### Beleza! Aqui está uma versão **mais enxuta**, mantendo só os pontos fortes e essenciais:
-
+  
 ---
 
 ## 5- Qualidade Report – Pipeline Serverless com PySpark
@@ -92,11 +94,11 @@ O projeto combina **orquestração, tratamento de dados e monitoramento de quali
 
 Este projeto demonstra como **PySpark e Databricks** podem ser usados para construir pipelines **escaláveis e robustos**, capazes de tratar qualquer tipo de dado, gerar métricas detalhadas e entregar resultados confiáveis para análises e dashboards.
 
+## Continuous Integration & Continuous Delivery (CI/CD)
+![CI e CD](imagens/CI-CD.png)
+
 ## Dasboard
 ![Dashboard](imagens/Dasbord.png)
-
-## Dashboard
-![Dashboard](imagens/Dashbord.png)
 
 ## Job
 ![Job](imagens/JOB.png)
