@@ -11,7 +11,7 @@ Pipeline completo no **Databricks** com PySpark para transformar dados brutos em
 Concluí recentemente um pipeline completo no **Databricks**, desenvolvido em **PySpark**, que transforma dados brutos em informações limpas, consistentes e prontas para análise.  
 O projeto combina **orquestração, tratamento de dados e monitoramento de qualidade**, mostrando habilidades práticas de ETL e engenharia de dados.
 
-Desenvolvimento e Versionamento
+## Desenvolvimento e Versionamento
 
 O pipeline foi desenvolvido diretamente no Databricks utilizando notebooks em PySpark.
 O versionamento do código foi realizado com Git, utilizando o Visual Studio Code para gerenciar commits e sincronização com o GitHub, além da automação de deploy com GitHub Actions.
