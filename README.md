@@ -6,7 +6,7 @@
 
 Pipeline completo no **Databricks** com PySpark para transformar dados brutos em informações limpas e prontas para análise.
 
-# Projeto Databricks: Pipeline de Dados End-to-End com PySpark
+# Projeto Databricks: Pipeline de Dados End-to-End com PySpark.
 
 Concluí recentemente um pipeline completo no **Databricks**, desenvolvido em **PySpark**, que transforma dados brutos em informações limpas, consistentes e prontas para análise.  
 O projeto combina **orquestração, tratamento de dados e monitoramento de qualidade**, mostrando habilidades práticas de ETL e engenharia de dados.
